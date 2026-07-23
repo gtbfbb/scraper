@@ -10,16 +10,16 @@ from email.mime.multipart import MIMEMultipart
 folder_path = Path("class data")
 
 class_profiles = {
-    "subject": ["HON", "PHY", "PHY", "PHY", "PHY", "PHY", "PHY"],
-    "catalog_number": [171, 122, 122, 122, 122, 122, 121],
+    "subject": ["HON", "PHY"],
+    "catalog_number": [171, 121],
     "term": 2267,
-    "class_number": [85327, 64179, 61035, 64566, 68728, 70263, 62630],
+    "class_number": [85327, 62630],
 }
 
 user_profiles = {
     "user": ["gene", "james"],
     "email": ["geneabeany@gmail.com", "jameshlim12@gmail.com"],
-    "classes":  [[85327, 64179, 61035, 64566, 68728, 70263, 62630], [62630]]
+    "classes":  [[85327, 62630], [62630]]
 }
 
 
@@ -37,7 +37,7 @@ def open_seats_data(count: int):
         with open(file_path, "r") as f:
             return json.load(f)
     except json.JSONDecodeError:
-        get_open_seats(class_profiles, count)
+        get_open_seats(count)
 
 
 def get_open_seats(count: int):
@@ -67,11 +67,12 @@ def check():
                         if (cp["class_number"][i] == up["classes"][j][k]):
                             print(up["user"][j])
                             send_email(cp["subject"][i] + str(cp["catalog_number"][i]) + ',' + str(cp["class_number"][i]) + ",previous: " + str(last_seats) + " current: " + str(current_seats), up["user"][j])
+                save_seats_data(i)
             else:
                  print(cp["subject"][i] + str(cp["catalog_number"][i]) + ',' + str(cp["class_number"][i]) + ',' + "no change")
         except FileNotFoundError:
              last_seats = get_open_seats(i)
-        save_seats_data(i)
+             save_seats_data(i)
     
 
 def send_email(message: str, user: str):
