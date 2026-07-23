@@ -2,9 +2,12 @@ from playwright.sync_api import sync_playwright
 import re
 import json
 import smtplib
+from pathlib import Path
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+
+folder_path = Path("class data")
 
 class_profiles = {
     "subject": ["HON", "PHY", "PHY", "PHY", "PHY", "PHY", "PHY"],
@@ -13,28 +16,31 @@ class_profiles = {
     "class_number": [85327, 64179, 61035, 64566, 68728, 70263, 62630],
 }
 
-
 user_profiles = {
     "user": ["gene", "james"],
     "email": ["geneabeany@gmail.com", "jameshlim12@gmail.com"],
-    "classes":  [[85327, 64179, 61035, 64566, 68728, 70263], [62630]]
+    "classes":  [[85327, 64179, 61035, 64566, 68728, 70263, 62630], [62630]]
 }
 
 
-def save_seats(class_profiles, count: int):
-    with open(class_profiles["subject"][count] + str(class_profiles["catalog_number"][count]) + ',' + str(class_profiles["class_number"][count]) + ".json", "w") as f:
-            json.dump(get_open_seats(class_profiles, count), f, indent=4)
+def save_seats_data(count: int):
+    file_path = folder_path / (class_profiles["subject"][count] + str(class_profiles["catalog_number"][count]) + ',' + str(class_profiles["class_number"][count]) + ".json")
+
+    with open(file_path, "w") as f:
+        json.dump(get_open_seats(count), f, indent=4)
 
 
-def open_seats(class_profiles, count: int):
+def open_seats_data(count: int):
+    file_path = folder_path / (class_profiles["subject"][count] + str(class_profiles["catalog_number"][count]) + ',' + str(class_profiles["class_number"][count]) + ".json")
+
     try:
-        with open(class_profiles["subject"][count] + str(class_profiles["catalog_number"][count]) + ',' + str(class_profiles["class_number"][count]) + ".json", "r") as f:
+        with open(file_path, "r") as f:
             return json.load(f)
     except json.JSONDecodeError:
         get_open_seats(class_profiles, count)
-    
 
-def get_open_seats(class_profiles, count: int):
+
+def get_open_seats(count: int):
     with sync_playwright() as p:
         browser = p.webkit.launch() 
         page = browser.new_page()
@@ -46,18 +52,14 @@ def get_open_seats(class_profiles, count: int):
 
 
 def check():
-    global class_profiles
-    global user_profiles
     cp = class_profiles
     up = user_profiles
     noclasses = len(cp["subject"])
-    nousers = len(up["user"])
-
 
     for i in range(noclasses):
         try:
-            last_seats = open_seats(cp, i)
-            current_seats = get_open_seats(cp, i)
+            last_seats = open_seats_data(i)
+            current_seats = get_open_seats(i)
             if (last_seats != current_seats and last_seats is not None):
                 print(cp["subject"][i] + str(cp["catalog_number"][i]) + ',' + str(cp["class_number"][i]) + ",previous: " + str(last_seats) + " current: " + str(current_seats))
                 for j in range(len(up["classes"])):
@@ -68,12 +70,11 @@ def check():
             else:
                  print(cp["subject"][i] + str(cp["catalog_number"][i]) + ',' + str(cp["class_number"][i]) + ',' + "no change")
         except FileNotFoundError:
-             last_seats = get_open_seats
-        save_seats(cp, i)
+             last_seats = get_open_seats(i)
+        save_seats_data(i)
     
 
 def send_email(message: str, user: str):
-    global user_profiles
     up = user_profiles
     user_pos = up["user"].index(user)
 
@@ -95,4 +96,11 @@ def send_email(message: str, user: str):
         server.sendmail(sender_email, receiver_email, msg.as_string())
 
 
+def create_folder():
+    folder_path.mkdir(parents=True, exist_ok=True)
+
+
+
+
+create_folder()
 check()
